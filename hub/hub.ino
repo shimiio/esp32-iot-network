@@ -34,6 +34,10 @@ SensorData esp3;
 int currentEsp = 2;
 bool lastButtonState = HIGH;
 
+// send delay
+unsigned long lastPostTime = 0;
+const unsigned long postInterval = 5000;
+
 void onReceive(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
   memcpy(&receivedData, data, sizeof(receivedData));
 
@@ -137,12 +141,16 @@ void loop() {
   }
 
   // send data to PC
-  if (WiFi.status() == WL_CONNECTED) {
+  if (WiFi.status() == WL_CONNECTED && millis() - lastPostTime >= postInterval) {
+    lastPostTime = millis();
+
     HTTPClient http;
     http.begin(serverUrl);
     http.setTimeout(2000);
     http.addHeader("Content-Type", "application/json");
+
     String body = "{\"esp2_temp\":" + String(esp2.temp) + ",\"esp2_hum\":" + String(esp2.hum) + ",\"esp3_temp\":" + String(esp3.temp) + ",\"esp3_hum\":" + String(esp3.hum) + "}";
+
     http.POST(body);
     http.end();
   }
